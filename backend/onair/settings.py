@@ -24,7 +24,12 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+_raw_hosts = os.environ.get("ALLOWED_HOSTS")
+if _raw_hosts:
+    ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
+else:
+    # In DEBUG allow all hosts for dev convenience; in production default to the Render host
+    ALLOWED_HOSTS = ["*"] if DEBUG else ["ota-bakfiles.onrender.com", "localhost"]
 
 
 
@@ -60,9 +65,17 @@ ROOT_URLCONF = 'onair.urls'
 
 WSGI_APPLICATION = 'onair.wsgi.application'
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+CORS_ALLOWED_ORIGINS = os.environ.get("CORS_ALLOWED_ORIGINS")
+if CORS_ALLOWED_ORIGINS:
+    # Allow an env var with comma separated domains
+    CORS_ALLOWED_ORIGINS = [d.strip() for d in CORS_ALLOWED_ORIGINS.split(",") if d.strip()]
+else:
+    # Defaults: local dev and your hosted frontends
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "https://myprojectsota.vercel.app",
+        "https://ota-bakfiles.onrender.com",
+    ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "*",
