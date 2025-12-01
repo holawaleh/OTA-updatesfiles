@@ -6,6 +6,8 @@ import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Devices from "./pages/Devices.jsx";
 import Projects from "./pages/Projects.jsx";
+import DeviceDetails from "./pages/DeviceDetails";
+
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
         <Route path="/devices" element={<Devices />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/firmware" element={<Firmware />} />
+        <Route path="/devices/:id" element={<DeviceDetails />} />
+
 <Route path="/settings" element={<Settings />} />
 
       </Routes>
