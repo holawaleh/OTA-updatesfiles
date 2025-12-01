@@ -29,3 +29,14 @@ export async function updateDevice(deviceId, payload) {
 }
 
 
+export function createProject(data) {
+  return api.post("/projects/", data);
+}
+
+export function deleteProject(id) {
+  return api.delete(`/projects/${id}/`);
+}
+
+export function updateProject(id, data) {
+  return api.put(`/projects/${id}/`, data);
+}
