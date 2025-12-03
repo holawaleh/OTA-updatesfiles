@@ -1,4 +1,7 @@
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import DashboardLayout from "../layout/DashboardLayout";
+
 import {
   fetchProject,
   fetchDevice,
@@ -7,106 +10,156 @@ import {
   deleteProject
 } from "../api/api";
 
-// ----------------------------
-// BASE CONFIG
-// ----------------------------
-const BASE_URL = "https://ota-bakfiles.onrender.com/api";
+export default function ProjectDetails() {
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-export const api = axios.create({
-  baseURL: BASE_URL,
-  headers: { "Content-Type": "application/json" },
-});
+  const [project, setProject] = useState(null);
+  const [devices, setDevices] = useState([]);
+  const [firmwares, setFirmwares] = useState([]);
+  const [selectedFirmware, setSelectedFirmware] = useState("");
+  const [loading, setLoading] = useState(true);
 
-// Attach token automatically
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+  useEffect(() => {
+    loadProject();
+    loadFirmwares();
+  }, []);
 
-// ----------------------------
-// AUTH
-// ----------------------------
-export async function loginUser(username, password) {
-  return api.post("/auth/login/", { username, password });
-}
+  async function loadProject() {
+    try {
+      const res = await fetchProject(id);
+      setProject(res.data);
 
-// ----------------------------
-// DEVICES
-// ----------------------------
-export function fetchDevices() {
-  return api.get("/devices/");
-}
-
-export function fetchDevice(id) {
-  return api.get(`/devices/${id}/`);
-}
-
-export function createDevice(data) {
-  return api.post("/devices/", data);
-}
-
-export function updateDevice(id, data) {
-  return api.put(`/devices/${id}/`, data);
-}
-
-export function deleteDevice(id) {
-  return api.delete(`/devices/${id}/`);
-}
-
-// ----------------------------
-// PROJECTS
-// ----------------------------
-export function fetchProjects() {
-  return api.get("/projects/");
-}
-
-export function fetchProject(id) {
-  return api.get(`/projects/${id}/`);
-}
-
-export function createProject(data) {
-  return api.post("/projects/", data);
-}
-
-export function updateProject(id, data) {
-  return api.put(`/projects/${id}/`, data);
-}
-
-export function deleteProject(id) {
-  return api.delete(`/projects/${id}/`);
-}
-
-// ----------------------------
-// FIRMWARE
-// ----------------------------
-export function fetchFirmwares() {
-  return api.get("/firmwares/");
-}
-
-export function fetchFirmware(id) {
-  return api.get(`/firmwares/${id}/`);
-}
-
-export function uploadFirmware(data) {
-  return api.post("/firmwares/", data, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-}
-
-export function deleteFirmware(id) {
-  return api.delete(`/firmwares/${id}/`);
-}
-
-
-async function loadProject() {
-  try {
-    const res = await fetchProject(id);
-    setProject(res.data);
-    loadDevicesForProject(res.data.devices);
-  } catch (err) {
-    console.error("Failed to load project:", err);
+      loadDevicesForProject(res.data.devices || []);
+    } catch (err) {
+      console.error("Failed to load project:", err);
+    }
+    setLoading(false);
   }
-  setLoading(false);
-}
 
+  async function loadDevicesForProject(deviceIds) {
+    const results = [];
+    for (const devId of deviceIds) {
+      try {
+        const res = await fetchDevice(devId);
+        results.push(res.data);
+      } catch (e) {
+        console.error("Device missing:", devId);
+      }
+    }
+    setDevices(results);
+  }
+
+  async function loadFirmwares() {
+    try {
+      const res = await fetchFirmwares();
+      setFirmwares(res.data);
+    } catch (err) {
+      console.error("Failed to load firmwares:", err);
+    }
+  }
+
+  async function handleAssignFirmware() {
+    if (!selectedFirmware) {
+      alert("Select a firmware first.");
+      return;
+    }
+
+    try {
+      await updateProject(id, { firmware: selectedFirmware });
+      alert("Firmware assigned!");
+      loadProject();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to assign firmware.");
+    }
+  }
+
+  async function handleDeleteProject() {
+    if (!window.confirm("Are you sure? This cannot be undone.")) return;
+
+    try {
+      await deleteProject(id);
+      alert("Project deleted.");
+      navigate("/projects");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete project.");
+    }
+  }
+
+  if (loading) {
+    return <DashboardLayout>Loading project...</DashboardLayout>;
+  }
+
+  if (!project) {
+    return <DashboardLayout>Project not found.</DashboardLayout>;
+  }
+
+  return (
+    <DashboardLayout>
+      <h1 className="text-3xl font-bold mb-4">{project.name}</h1>
+      <p className="text-gray-700 mb-6">{project.description}</p>
+
+      <div className="bg-white p-4 shadow rounded mb-6">
+        <h3 className="text-xl font-semibold mb-2">Assigned Firmware</h3>
+
+        <p className="text-gray-600 mb-4">
+          Current firmware:{" "}
+          {project.firmware ? `#${project.firmware}` : "None assigned"}
+        </p>
+
+        <select
+          value={selectedFirmware}
+          onChange={(e) => setSelectedFirmware(e.target.value)}
+          className="border p-2 rounded w-full"
+        >
+          <option value="">Select firmware</option>
+          {firmwares.map((fw) => (
+            <option key={fw.id} value={fw.id}>
+              {fw.version}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={handleAssignFirmware}
+          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Assign Firmware
+        </button>
+      </div>
+
+      <div className="bg-white p-4 shadow rounded mb-6">
+        <h3 className="text-xl font-semibold mb-4">Devices in this Project</h3>
+
+        {devices.length === 0 && (
+          <p className="text-gray-500">No devices assigned.</p>
+        )}
+
+        <div className="space-y-3">
+          {devices.map((dev) => (
+            <div
+              key={dev.id}
+              onClick={() => navigate(`/devices/${dev.id}`)}
+              className="p-4 shadow rounded border cursor-pointer hover:bg-gray-100 transition"
+            >
+              <div className="font-semibold">{dev.mac_address}</div>
+              <div className="text-sm text-gray-600">
+                Version: {dev.current_version}
+              </div>
+              <div className="text-sm text-gray-600">Status: {dev.status}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={handleDeleteProject}
+        className="bg-red-600 text-white px-4 py-2 rounded"
+      >
+        Delete Project
+      </button>
+    </DashboardLayout>
+  );
+}

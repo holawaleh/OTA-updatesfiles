@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// ----------------------------
+// ======================================
 // BASE CONFIG
-// ----------------------------
+// ======================================
 const BASE_URL = "https://ota-bakfiles.onrender.com/api";
 
 export const api = axios.create({
@@ -17,16 +17,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// ----------------------------
+// ======================================
 // AUTH
-// ----------------------------
-export async function loginUser(username, password) {
+// ======================================
+export function loginUser(username, password) {
   return api.post("/auth/login/", { username, password });
 }
 
-// ----------------------------
+// ======================================
 // DEVICES
-// ----------------------------
+// ======================================
 export function fetchDevices() {
   return api.get("/devices/");
 }
@@ -47,9 +47,9 @@ export function deleteDevice(id) {
   return api.delete(`/devices/${id}/`);
 }
 
-// ----------------------------
+// ======================================
 // PROJECTS
-// ----------------------------
+// ======================================
 export function fetchProjects() {
   return api.get("/projects/");
 }
@@ -70,9 +70,9 @@ export function deleteProject(id) {
   return api.delete(`/projects/${id}/`);
 }
 
-// ----------------------------
+// ======================================
 // FIRMWARE
-// ----------------------------
+// ======================================
 export function fetchFirmwares() {
   return api.get("/firmwares/");
 }
