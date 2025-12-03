@@ -40,3 +40,15 @@ export function deleteProject(id) {
 export function updateProject(id, data) {
   return api.put(`/projects/${id}/`, data);
 }
+
+export function fetchFirmwares() {
+  return api.get("/firmwares/");
+}
+
+export function updateProject(id, data) {
+  return api.put(`/projects/${id}/`, data);
+}
+
+export function deleteProject(id) {
+  return api.delete(`/projects/${id}/`);
+}
